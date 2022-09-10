@@ -31,7 +31,7 @@ admins = {
 
     
 def get_users_from_google():
-    URL = "URL"
+    URL = "https://docs.google.com/spreadsheets/d/1thPwqNBytlqDEtFsylyyGi7upxN3eK2HeNtrh5OlbDc/edit#gid=0"
     URL = URL.replace("/edit#gid=", "/export?format=csv&gid=")
     example_df = pd.read_csv(URL)
     filtered_df = example_df[["ID","Discord Name", "isExpired"]]
@@ -76,6 +76,7 @@ async def func():
     
     time.sleep(1)
     await msg_admin("utku")
+    await msg_admin("emrefx")
 
 ## EVENTS ##
 @client.event
@@ -86,7 +87,7 @@ async def on_ready():
     scheduler = AsyncIOScheduler()
     
     #sends "s!t" to the channel when time hits 10/20/30/40/50/60 seconds, like 12:04:20 PM
-    scheduler.add_job(func, CronTrigger(second="0, 10, 20, 30, 40, 50")) 
+    scheduler.add_job(func, CronTrigger(year="*", month="*", day="*", hour="11", minute="0", second="0")) 
 
     #starting the scheduler
     scheduler.start()
