@@ -1,12 +1,11 @@
 import os
 import discord
 import time
-import datetime
 import pandas as pd
 from dotenv import load_dotenv
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
-from discord import DMChannel
+
 
 ## AUTHENTICATION ##
 load_dotenv()
@@ -18,30 +17,52 @@ intents.message_content = True
 client = discord.Client(intents=intents)
 
 TEXT = """
-Selam bro,
-Üyeliğinin süresi bu gün itibariyle maalesef doldu.
-Üyeliğine devam etmek veya üyelik durumunu güncellemek için lütfen @emrefx ile iletişime geç.
+Selamlar!,
+Üyeliğinizin süresi bu gün itibariyle maalesef doldu.
+Üyeliğinizee devam etmek veya üyelik durumunuzu güncellemek için lütfen @emrefx ile iletişime geçin.
 
+(Not: Bu otomatik bir mesajdır, cevap vermenize gerek yoktur.)
 """
 
+admins = {
+    "utku": 326790762517889034,
+    "emrefx": 514075929862209567,
+    }
 
-## FLOW ##  
+    
 def get_users_from_google():
     URL = "https://docs.google.com/spreadsheets/d/1aDv2wWxeJrGViqDeDCC5OsAKv2VDzX9PXzjWdOznUfQ/edit#gid=0"
     URL = URL.replace("/edit#gid=", "/export?format=csv&gid=")
     example_df = pd.read_csv(URL)
     filtered_df = example_df[["ID","Discord Name", "isExpired"]]
     expired_users = filtered_df["ID"][filtered_df.isExpired == "Yes"]
-    expired_lists = [user for user in expired_users]
-    return expired_lists
+    expired_names = filtered_df["Discord Name"][filtered_df.isExpired == "Yes"]
+
+    expired_list = [i for i in expired_users]
+    expired_names_list = [i for i in expired_names]
     
+    return expired_list, expired_names_list
+
+async def msg_admin(inp_name: str):
+    _, name = get_users_from_google()
+    num_name = len(name)
+    admin = admins[inp_name]
+    user = await client.fetch_user(admin)
+    print("user")
+    try:
+        await user.send(
+            f"Günaydın.\nBugün ödemesi gelen {num_name} kişi var:\n{name}\nKendilerine bilgilendirme mesajı gönderildi."
+            )
+    except:
+        print("Exception")
+        pass
 
 ## FUNCTIONS ##
     
 @client.event
 async def func():
-    print("Hello world!")
-    list_users = get_users_from_google()
+    print("Bot is running...")
+    list_users, _ = get_users_from_google()
     
     # Kullanıcılara mesaj atma
     for i in list_users:
@@ -52,6 +73,9 @@ async def func():
         except:
             print("Exception")
             pass
+    
+    time.sleep(1)
+    await msg_admin("utku")
 
 ## EVENTS ##
 @client.event
@@ -66,26 +90,8 @@ async def on_ready():
 
     #starting the scheduler
     scheduler.start()
-    
-    
-    
-@client.event
-async def on_message(message):
-    id = message.author.id
-    user = await client.fetch_user(id)
-
-    try:
-        await user.send(f"Hey, {current_time}")
-    except:
-        print("Exception")
-        pass
-
 
 
 ## RUN ##
 if __name__ == "__main__":
     client.run(TOKEN)
-    
-
-
-
