@@ -18,8 +18,8 @@ client = discord.Client(intents=intents)
 
 TEXT = """
 Selamlar!,
-Üyeliğinizin süresi bu gün itibariyle maalesef doldu.
-Üyeliğinizee devam etmek veya üyelik durumunuzu güncellemek için lütfen @emrefx ile iletişime geçin.
+Üyeliğinizin süresi maalesef doldu.
+Üyeliğinize devam etmek veya üyelik durumunuzu güncellemek için lütfen @emrefx ile iletişime geçin.
 
 (Not: Bu otomatik bir mesajdır, cevap vermenize gerek yoktur.)
 """
@@ -31,9 +31,11 @@ admins = {
 
     
 def get_users_from_google():
-    URL = ""
+    print("Getting data from google..")
+    URL = "https://docs.google.com/spreadsheets/d/1thPwqNBytlqDEtFsylyyGi7upxN3eK2HeNtrh5OlbDc/edit#gid=0"
     URL = URL.replace("/edit#gid=", "/export?format=csv&gid=")
-    example_df = pd.read_csv(URL)
+    #example_df = pd.read_csv(URL, dtype = {})
+    example_df = pd.read_csv(URL, dtype = {"ID": str})
     filtered_df = example_df[["ID","Discord Name", "isExpired"]]
     expired_users = filtered_df["ID"][filtered_df.isExpired == "Yes"]
     expired_names = filtered_df["Discord Name"][filtered_df.isExpired == "Yes"]
@@ -48,7 +50,7 @@ async def msg_admin(inp_name: str):
     num_name = len(name)
     admin = admins[inp_name]
     user = await client.fetch_user(admin)
-    print("user")
+    print("Sendin msg to admins...")
     try:
         await user.send(
             f"Günaydın.\nBugün ödemesi gelen {num_name} kişi var:\n{name}\nKendilerine bilgilendirme mesajı gönderildi."
@@ -71,7 +73,7 @@ async def func():
         try:
             await user.send(TEXT)
         except:
-            print("Exception")
+            print(f"Can't send msg to: {i}")
             pass
     
     time.sleep(1)
@@ -87,7 +89,7 @@ async def on_ready():
     scheduler = AsyncIOScheduler()
     
     #sends "s!t" to the channel when time hits 10/20/30/40/50/60 seconds, like 12:04:20 PM
-    scheduler.add_job(func, CronTrigger(year="*", month="*", day="*", hour="11", minute="0", second="0")) 
+    scheduler.add_job(func, CronTrigger(year="*", month="*", day="*", hour="8", minute="0")) 
 
     #starting the scheduler
     scheduler.start()
