@@ -32,7 +32,7 @@ admins = {
     
 def get_users_from_google():
     print("Getting data from google..")
-    URL = "https://docs.google.com/spreadsheets/d/1thPwqNBytlqDEtFsylyyGi7upxN3eK2HeNtrh5OlbDc/edit#gid=0"
+    URL = ""
     URL = URL.replace("/edit#gid=", "/export?format=csv&gid=")
     #example_df = pd.read_csv(URL, dtype = {})
     example_df = pd.read_csv(URL, dtype = {"ID": str})
@@ -50,11 +50,15 @@ async def msg_admin(inp_name: str):
     num_name = len(name)
     admin = admins[inp_name]
     user = await client.fetch_user(admin)
+    everyone_ok_text = "Günaydın.\nBugün ödemesi gelen hiç kimse yok!\nBol kazançlı günler!"
+    other_text = f"Günaydın.\nBugün ödemesi gelen {num_name} kişi var:\n{name}\nKendilerine bilgilendirme mesajı gönderildi."
+
     print("Sendin msg to admins...")
     try:
-        await user.send(
-            f"Günaydın.\nBugün ödemesi gelen {num_name} kişi var:\n{name}\nKendilerine bilgilendirme mesajı gönderildi."
-            )
+        if (num_name == 0):
+            await user.send(everyone_ok_text)
+        else:
+            await user.send(other_text) 
     except:
         print("Exception")
         pass
@@ -79,6 +83,7 @@ async def func():
     time.sleep(1)
     await msg_admin("utku")
     await msg_admin("emrefx")
+    print("Done!")
 
 ## EVENTS ##
 @client.event
@@ -89,8 +94,9 @@ async def on_ready():
     scheduler = AsyncIOScheduler()
     
     #sends "s!t" to the channel when time hits 10/20/30/40/50/60 seconds, like 12:04:20 PM
-    scheduler.add_job(func, CronTrigger(year="*", month="*", day="*", hour="8", minute="0")) 
-
+    # scheduler.add_job(func, CronTrigger(year="*", month="*", day="*", hour="8", minute="0")) 
+    scheduler.add_job(func, CronTrigger(second="0, 10, 20, 30, 40, 50")) 
+    
     #starting the scheduler
     scheduler.start()
 
