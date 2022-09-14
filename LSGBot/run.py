@@ -2,6 +2,8 @@ import os
 import discord
 import time
 import pandas as pd
+import requests as req
+from tabulate import tabulate
 from dotenv import load_dotenv
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
@@ -32,7 +34,7 @@ admins = {
     
 def get_users_from_google():
     print("Getting data from google..")
-    URL = ""
+    URL = "https://docs.google.com/spreadsheets/d/1thPwqNBytlqDEtFsylyyGi7upxN3eK2HeNtrh5OlbDc/edit#gid=0"
     URL = URL.replace("/edit#gid=", "/export?format=csv&gid=")
     #example_df = pd.read_csv(URL, dtype = {})
     example_df = pd.read_csv(URL, dtype = {"ID": str})
@@ -44,6 +46,19 @@ def get_users_from_google():
     expired_names_list = [i for i in expired_names]
     
     return expired_list, expired_names_list
+
+def get_calendar_data(param: str) -> pd.DataFrame:
+    URL = "https://api.fintables.com/macro/calendar/?type=json&params={%22currentTab%22:%22"+ param +"%22,%22timeZone%22:63}"
+
+    x = req.get(URL)
+    ret = x.json()
+
+    df = pd.DataFrame(ret)
+    ## Adapting dates
+    df_important = df[["time","currency","provider_event_title", "forecast", "previous"]][df.importance == 3]
+    df_important = df_important.rename(columns={'currency': 'cur', 'provider_event_title': 'title', 'forecast': 'for', 'previous': 'prev'})
+
+    return df_important
 
 async def msg_admin(inp_name: str):
     _, name = get_users_from_google()
@@ -85,6 +100,22 @@ async def func():
     await msg_admin("emrefx")
     print("Done!")
 
+@client.event
+async def calendar():
+    channel_id = 1019662109346369586
+    data = get_calendar_data("today")
+    channel = client.get_channel(channel_id)
+    
+    data = tabulate(data, numalign = "left", disable_numparse = True, headers = "keys", tablefmt="psql", stralign='center', showindex = False)
+    out_text = """
+    İyi günler. Bugünkü önemli veriler:
+    ```{}```
+    """.format(data)
+    
+    await channel.send(out_text)
+
+    print("Calendar Done!")
+    
 ## EVENTS ##
 @client.event
 async def on_ready():
@@ -94,8 +125,12 @@ async def on_ready():
     scheduler = AsyncIOScheduler()
     
     #sends "s!t" to the channel when time hits 10/20/30/40/50/60 seconds, like 12:04:20 PM
-    # scheduler.add_job(func, CronTrigger(year="*", month="*", day="*", hour="8", minute="0")) 
-    scheduler.add_job(func, CronTrigger(second="0, 10, 20, 30, 40, 50")) 
+    # 3 saat geriden geliyor - 11:00
+    scheduler.add_job(func, CronTrigger(year="*", month="*", day="*", hour="8", minute="0")) 
+    # Test cron
+    # scheduler.add_job(calendar, CronTrigger(second="0, 10, 20, 30, 40, 50")) 
+    # 3 saat geriden geliyor - 08.00
+    scheduler.add_job(func, CronTrigger(year="*", month="*", day="*", hour="5", minute="0")) 
     
     #starting the scheduler
     scheduler.start()
@@ -104,3 +139,4 @@ async def on_ready():
 ## RUN ##
 if __name__ == "__main__":
     client.run(TOKEN)
+
