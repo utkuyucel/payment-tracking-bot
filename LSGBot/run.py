@@ -35,7 +35,7 @@ admins = {
     
 def get_users_from_google():
     print("Getting data from google..")
-    URL = "https://docs.google.com/spreadsheets/d/1thPwqNBytlqDEtFsylyyGi7upxN3eK2HeNtrh5OlbDc/edit#gid=0"
+    URL = ""
     URL = URL.replace("/edit#gid=", "/export?format=csv&gid=")
     example_df = pd.read_csv(URL, dtype = {"ID": str})
     filtered_df = example_df[["ID","Discord Name", "isExpired"]]
