@@ -3,6 +3,7 @@ import discord
 import time
 import pandas as pd
 import requests as req
+from datetime import datetime
 from tabulate import tabulate
 from dotenv import load_dotenv
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -59,6 +60,23 @@ def get_calendar_data(param: str) -> pd.DataFrame:
     df_important = df_important.rename(columns={'currency': 'cur', 'provider_event_title': 'title', 'forecast': 'for', 'previous': 'prev'})
 
     return df_important
+
+async def get_user_count_by_date():
+    """
+    A function that exports user count and today to a .csv file (appends data every running)
+    """
+    URL = "https://docs.google.com/spreadsheets/d/1thPwqNBytlqDEtFsylyyGi7upxN3eK2HeNtrh5OlbDc/edit#gid=0"
+    URL = URL.replace("/edit#gid=", "/export?format=csv&gid=")
+    df = pd.read_csv(URL, dtype = {"ID": str})
+    now = datetime.now().strftime("%d-%m-%Y")
+    user_count = df["Twitter Name"].count()
+
+    data = {"date": [now], "user_count": [user_count]}
+
+    df = pd.DataFrame(data = data)  
+    df.to_csv("user_data.csv", mode = "a", index = False, header = False)
+
+    print("Export done!\n")
 
 async def msg_admin(inp_name: str):
     _, name = get_users_from_google()
@@ -128,15 +146,16 @@ async def test(ctx):
     """.format(data)
     await ctx.send(out_text)
 
-@bot.command(name = "thisweek")
-async def test(ctx):
-    data = get_calendar_data("thisWeek")
-    data = tabulate(data, numalign = "left", disable_numparse = True, headers = "keys", tablefmt="psql", stralign='center', showindex = False)
-    out_text = """
-    Update:
-    ```{}```
-    """.format(data)
-    await ctx.send(out_text)   
+## IN PROGRESS ##
+# @bot.command(name = "thisweek")
+# async def test(ctx):
+#     data = get_calendar_data("thisWeek")
+#     data = tabulate(data, numalign = "left", disable_numparse = True, headers = "keys", tablefmt="psql", stralign='center', showindex = False)
+#     out_text = """
+#     Update:
+#     ```{}```
+#     """.format(data)
+#     await ctx.send(out_text)   
 
 @bot.command(name = "fedrate")
 async def fedRate(ctx):
@@ -150,6 +169,8 @@ async def fedRate(ctx):
     
     classic_text = f"```{x} tarihi itibariyle FED Faiz oranı: {y}%\n```"
     await ctx.send(classic_text)
+    
+
 
     
 ## JOBS ##
@@ -163,9 +184,9 @@ async def on_ready():
     scheduler.add_job(calendar, CronTrigger(year="*", month="*", day="*", hour="5", minute="0"))
     #sends "s!t" to the channel when time hits 10/20/30/40/50/60 seconds, like 12:04:20 PM
     # 3 saat geriden geliyor - 11:00
+    scheduler.add_job(get_user_count_by_date, CronTrigger(year="*", month="*", day="*", hour="5", minute="0")) 
     scheduler.add_job(func, CronTrigger(year="*", month="*", day="*", hour="8", minute="0"))
     # Test cron
-    # scheduler.add_job(calendar, CronTrigger(second="0, 10, 20, 30, 40, 50")) 
     # 3 saat geriden geliyor - 08.00
     
     #starting the scheduler
