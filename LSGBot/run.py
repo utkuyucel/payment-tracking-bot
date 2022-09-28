@@ -36,7 +36,7 @@ admins = {
     
 def get_users_from_google():
     print("Getting data from google..")
-    URL = ""
+    URL = "https://docs.google.com/spreadsheets/d/1thPwqNBytlqDEtFsylyyGi7upxN3eK2HeNtrh5OlbDc/edit#gid=0"
     URL = URL.replace("/edit#gid=", "/export?format=csv&gid=")
     example_df = pd.read_csv(URL, dtype = {"ID": str})
     filtered_df = example_df[["ID","Discord Name", "isExpired"]]
@@ -78,20 +78,26 @@ async def get_user_count_by_date():
 
     print("Export done!\n")
 
-async def msg_admin(inp_name: str):
+async def msg_admin(inp_name: str, cant_send: list):
     _, name = get_users_from_google()
     num_name = len(name)
     admin = admins[inp_name]
     user = await bot.fetch_user(admin)
+    
     everyone_ok_text = "Günaydın.\nBugün ödemesi gelen hiç kimse yok!\nBol kazançlı günler!"
     other_text = f"Günaydın.\nBugün ödemesi gelen {num_name} kişi var:\n{name}\nKendilerine bilgilendirme mesajı gönderildi."
-
+    cant_send_text = f"{len(cant_send)} kişiye ulaşılamadı. Lütfen manuel mesaj atın:\n{cant_send}"
+    
     print("Sendin msg to admins...")
     try:
         if (num_name == 0):
             await user.send(everyone_ok_text)
         else:
-            await user.send(other_text) 
+            if (len(cant_send_text) == 0):
+                await user.send(other_text) 
+            else:
+                await user.send(other_text)
+                await user.send(cant_send_text) 
     except:
         print("Exception")
         pass
@@ -102,21 +108,24 @@ async def msg_admin(inp_name: str):
 async def func():
     print("Bot is running...")
     list_users, _ = get_users_from_google()
+    cant_send = []
     
     # Kullanıcılara mesaj atma
     for i in list_users:
         user = await bot.fetch_user(i)
         
         try:
-            await user.send(TEXT)
+            await user.send(TEXT) ### TODO: Uncomment this line
             print("Sent: ", user)
+            time.sleep(0.33)
         except:
-            print(f"Can't send msg to: {i}")
+            print(f"Can't send msg to: {user}")
+            cant_send.append(user.name)
             pass
     
     time.sleep(1)
-    await msg_admin("utku")
-    await msg_admin("emrefx")
+    await msg_admin("utku", cant_send)
+    await msg_admin("emrefx", cant_send) ### TODO: Uncomment this line
     print("Done!")
 
 @bot.event
@@ -180,15 +189,13 @@ async def on_ready():
     
      #initializing scheduler
     scheduler = AsyncIOScheduler()
-    
-    scheduler.add_job(calendar, CronTrigger(year="*", month="*", day="*", hour="5", minute="0"))
-    #sends "s!t" to the channel when time hits 10/20/30/40/50/60 seconds, like 12:04:20 PM
-    # 3 saat geriden geliyor - 11:00
-    scheduler.add_job(get_user_count_by_date, CronTrigger(year="*", month="*", day="*", hour="5", minute="0")) 
+
+    scheduler.add_job(get_user_count_by_date, CronTrigger(year="*", month="*", day="*", hour="3", minute="0"))
+    scheduler.add_job(calendar, CronTrigger(year="*", month="*", day="*", hour="6", minute="0"))
+
     scheduler.add_job(func, CronTrigger(year="*", month="*", day="*", hour="8", minute="0"))
-    # Test cron
-    # 3 saat geriden geliyor - 08.00
-    
+
+    #scheduler.add_job(func, CronTrigger(second="10,20,30,40, 50"), max_instances=50)
     #starting the scheduler
     scheduler.start()
 
