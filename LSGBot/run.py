@@ -65,7 +65,7 @@ async def get_user_count_by_date():
     """
     A function that exports user count and today to a .csv file (appends data every running)
     """
-    URL = "https://docs.google.com/spreadsheets/d/1thPwqNBytlqDEtFsylyyGi7upxN3eK2HeNtrh5OlbDc/edit#gid=0"
+    URL = ""
     URL = URL.replace("/edit#gid=", "/export?format=csv&gid=")
     df = pd.read_csv(URL, dtype = {"ID": str})
     now = datetime.now().strftime("%d-%m-%Y")
