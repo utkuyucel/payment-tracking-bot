@@ -93,7 +93,7 @@ async def msg_admin(inp_name: str, cant_send: list):
         if (num_name == 0):
             await user.send(everyone_ok_text)
         else:
-            if (len(cant_send_text) == 0):
+            if (len(cant_send) == 0):
                 await user.send(other_text) 
             else:
                 await user.send(other_text)
