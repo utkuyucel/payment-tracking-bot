@@ -9,9 +9,10 @@ from dotenv import load_dotenv
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from discord.ext import commands
+from discord.utils import get
 
 
-## AUTHENTICATION ##
+################################################################## AUTHENTICATION ##################################################################
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
 
@@ -21,11 +22,20 @@ intents.message_content = True
 bot = commands.Bot(command_prefix='!',intents=intents)
 
 TEXT = """
-Selamlar!,
+Selamlar.
 Üyeliğinizin süresi maalesef doldu.
 Üyeliğinize devam etmek veya üyelik durumunuzu güncellemek için lütfen @emrefx ile iletişime geçin.
 
-(Not: Bu otomatik bir mesajdır, cevap vermenize gerek yoktur.)
+(Uyarı: Bu otomatik bir mesajdır, cevap vermenize gerek yoktur.)
+"""
+
+DOWNGRADE_TEXT = """
+Selamlar.
+Grup üyeliğinizi yeniletmeniz için gerekli olan 1 haftalık süre bugün itibariyle maalesef dolmuştur.
+Bu yüzden, @member üyelik yetkiniz alınmıştır. 
+Üyeliğinize devam etmek veya üyelik durumunuzu güncellemek için lütfen @emrefx ile iletişime geçin.
+
+(Uyarı: Bu otomatik bir mesajdır, cevap vermenize gerek yoktur.)
 """
 
 admins = {
@@ -33,6 +43,7 @@ admins = {
     "emrefx": 514075929862209567,
     }
 
+GUILD_ID = 973207220953182280
     
 def get_users_from_google():
     print("Getting data from google..")
@@ -60,6 +71,20 @@ def get_calendar_data(param: str) -> pd.DataFrame:
     df_important = df_important.rename(columns={'currency': 'cur', 'provider_event_title': 'title', 'forecast': 'for', 'previous': 'prev'})
 
     return df_important
+
+
+def users_to_be_downgraded():
+    URL = ""
+    URL = URL.replace("/edit#gid=", "/export?format=csv&gid=")
+    example_df = pd.read_csv(URL, dtype = {"ID": str})
+    filtered_df = example_df[["ID","Discord Name", "Days Remaining", "isExpired"]]
+    output_names = filtered_df[filtered_df["Days Remaining"] <= -7]["ID"]
+
+    output_list = [i for i in output_names]
+    return output_list
+
+
+    
 
 async def get_user_count_by_date():
     """
@@ -102,7 +127,21 @@ async def msg_admin(inp_name: str, cant_send: list):
         print("Exception")
         pass
 
-## FUNCTIONS ##
+async def msg_downgrade_to_admin(inp_name: str, downgraded: list):
+    admin = admins[inp_name]
+    user = await bot.fetch_user(admin)
+    DOWNGRADED_TEST_SUCCESS = f"{len(downgraded)} kişinin @member rolü alındı.\n{downgraded}"
+    DOWNGRADED_TEST_FAIL = "@member rolü alınan hiç kimse yok.."
+    print("Sendin downgrade msg to admins...")
+    try:
+        if (len(downgraded) > 0):
+            await user.send(DOWNGRADED_TEST_SUCCESS)
+        else:
+            await user.send(DOWNGRADED_TEST_FAIL)
+    except:
+        print("Exception")
+        pass
+################################################################## FUNCTIONS ##################################################################
     
 @bot.event
 async def func():
@@ -144,7 +183,7 @@ async def calendar():
 
     print("Calendar Done!")
     
-## COMMANDS ##
+################################################################## COMMANDS ####################################################################
 @bot.command(name = "today")
 async def test(ctx):
     data = get_calendar_data("today")
@@ -154,17 +193,6 @@ async def test(ctx):
     ```{}```
     """.format(data)
     await ctx.send(out_text)
-
-## IN PROGRESS ##
-# @bot.command(name = "thisweek")
-# async def test(ctx):
-#     data = get_calendar_data("thisWeek")
-#     data = tabulate(data, numalign = "left", disable_numparse = True, headers = "keys", tablefmt="psql", stralign='center', showindex = False)
-#     out_text = """
-#     Update:
-#     ```{}```
-#     """.format(data)
-#     await ctx.send(out_text)   
 
 @bot.command(name = "fedrate")
 async def fedRate(ctx):
@@ -178,27 +206,53 @@ async def fedRate(ctx):
     
     classic_text = f"```{x} tarihi itibariyle FED Faiz oranı: {y}%\n```"
     await ctx.send(classic_text)
-    
 
+@bot.event
+async def downgrade_users():
+    """
+    A function that downgrades users who have not renewed their membership
+    """
+    users = []
+    print("Downgrading users..")
+    guild = bot.get_guild(GUILD_ID)
+    role = get(guild.roles, name = "member")
 
+    users_to_be_downgraded_list = users_to_be_downgraded()
+    if (len(users_to_be_downgraded_list) > 0):
+        for user in users_to_be_downgraded_list:
+            user = await guild.fetch_member(user)
+            if (role in user.roles):
+                await user.remove_roles(role)
+                await user.send(DOWNGRADE_TEXT)
+                print(f"{user.name} has been downgraded!")
+                users.append(user.name)
+            else:
+                print("User is already downgraded!")
+    else:
+        print("Henüz üyelik süresini aşan kullanıcı yok.")
+        
+    await msg_downgrade_to_admin("utku", users)
+    await msg_downgrade_to_admin("emrefx", users) 
     
-## JOBS ##
+    print("Downgrading done!\n")
+
+################################################################## CRON JOBS ####################################################################
 @bot.event
 async def on_ready():
     print(f'We have logged in as {bot.user}')
     
      #initializing scheduler
     scheduler = AsyncIOScheduler()
-
+    
     scheduler.add_job(get_user_count_by_date, CronTrigger(year="*", month="*", day="*", hour="3", minute="0"))
     scheduler.add_job(calendar, CronTrigger(year="*", month="*", day="*", hour="6", minute="0"))
 
     scheduler.add_job(func, CronTrigger(year="*", month="*", day="*", hour="8", minute="0"))
-
-    #scheduler.add_job(func, CronTrigger(second="10,20,30,40, 50"), max_instances=50)
+    scheduler.add_job(downgrade_users, CronTrigger(year="*", month="*", day="*", hour="8", minute="15"), max_instances=50)
+        
     #starting the scheduler
     scheduler.start()
-
+    
 
 ## RUN ##
 if __name__ == "__main__":
