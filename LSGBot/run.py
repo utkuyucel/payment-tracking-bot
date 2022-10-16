@@ -47,7 +47,7 @@ GUILD_ID = 973207220953182280
     
 def get_users_from_google():
     print("Getting data from google..")
-    URL = ""
+    URL = "https://docs.google.com/spreadsheets/d/1thPwqNBytlqDEtFsylyyGi7upxN3eK2HeNtrh5OlbDc/edit#gid=0"
     URL = URL.replace("/edit#gid=", "/export?format=csv&gid=")
     example_df = pd.read_csv(URL, dtype = {"ID": str})
     filtered_df = example_df[["ID","Discord Name", "isExpired"]]
@@ -74,7 +74,7 @@ def get_calendar_data(param: str) -> pd.DataFrame:
 
 
 def users_to_be_downgraded():
-    URL = ""
+    URL = "https://docs.google.com/spreadsheets/d/1thPwqNBytlqDEtFsylyyGi7upxN3eK2HeNtrh5OlbDc/edit#gid=0"
     URL = URL.replace("/edit#gid=", "/export?format=csv&gid=")
     example_df = pd.read_csv(URL, dtype = {"ID": str})
     filtered_df = example_df[["ID","Discord Name", "Days Remaining", "isExpired"]]
@@ -90,7 +90,7 @@ async def get_user_count_by_date():
     """
     A function that exports user count and today to a .csv file (appends data every running)
     """
-    URL = ""
+    URL = "https://docs.google.com/spreadsheets/d/1thPwqNBytlqDEtFsylyyGi7upxN3eK2HeNtrh5OlbDc/edit#gid=0"
     URL = URL.replace("/edit#gid=", "/export?format=csv&gid=")
     df = pd.read_csv(URL, dtype = {"ID": str})
     now = datetime.now().strftime("%d-%m-%Y")
@@ -154,7 +154,7 @@ async def func():
         user = await bot.fetch_user(i)
         
         try:
-            await user.send(TEXT) ### TODO: Uncomment this line
+            await user.send(TEXT) 
             print("Sent: ", user)
             time.sleep(0.33)
         except:
@@ -164,7 +164,7 @@ async def func():
     
     time.sleep(1)
     await msg_admin("utku", cant_send)
-    await msg_admin("emrefx", cant_send) ### TODO: Uncomment this line
+    await msg_admin("emrefx", cant_send) 
     print("Done!")
 
 @bot.event
@@ -218,21 +218,29 @@ async def downgrade_users():
     role = get(guild.roles, name = "member")
 
     users_to_be_downgraded_list = users_to_be_downgraded()
+    
     if (len(users_to_be_downgraded_list) > 0):
         for user in users_to_be_downgraded_list:
-            user = await guild.fetch_member(user)
-            if (role in user.roles):
-                await user.remove_roles(role)
-                await user.send(DOWNGRADE_TEXT)
-                print(f"{user.name} has been downgraded!")
-                users.append(user.name)
-            else:
-                print("User is already downgraded!")
+            try:
+                user = await guild.fetch_member(user)
+    
+                if (role in user.roles):
+                    await user.remove_roles(role) 
+                    await user.send(DOWNGRADE_TEXT) 
+                    print(f"{user.name} has been downgraded!")
+                    users.append(user.name)
+                else:
+                    print("User is already downgraded!")
+            
+            except:
+                print(f"Exception: {user}")
+                continue
+            
     else:
         print("Henüz üyelik süresini aşan kullanıcı yok.")
         
     await msg_downgrade_to_admin("utku", users)
-    await msg_downgrade_to_admin("emrefx", users) 
+    await msg_downgrade_to_admin("emrefx", users)
     
     print("Downgrading done!\n")
 
@@ -242,6 +250,8 @@ async def on_ready():
     print(f'We have logged in as {bot.user}')
     
      #initializing scheduler
+    
+    
     scheduler = AsyncIOScheduler()
     
     scheduler.add_job(get_user_count_by_date, CronTrigger(year="*", month="*", day="*", hour="3", minute="0"))
@@ -249,7 +259,9 @@ async def on_ready():
 
     scheduler.add_job(func, CronTrigger(year="*", month="*", day="*", hour="8", minute="0"))
     scheduler.add_job(downgrade_users, CronTrigger(year="*", month="*", day="*", hour="8", minute="15"), max_instances=50)
-        
+    
+    
+    # scheduler.add_job(downgrade_users, CronTrigger(second="10, 20, 30, 40,50"), max_instances=50)
     #starting the scheduler
     scheduler.start()
     
