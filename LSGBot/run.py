@@ -18,6 +18,7 @@ TOKEN = os.getenv("DISCORD_TOKEN")
 
 intents = discord.Intents.default()
 intents.message_content = True
+intents.members = True
 
 bot = commands.Bot(command_prefix='!',intents=intents)
 
@@ -36,6 +37,14 @@ Bu yüzden, @member üyelik yetkiniz alınmıştır.
 Üyeliğinize devam etmek veya üyelik durumunuzu güncellemek için lütfen @emrefx ile iletişime geçin.
 
 (Uyarı: Bu otomatik bir mesajdır, cevap vermenize gerek yoktur.)
+"""
+
+WELCOME_TEXT = """
+Left Shoulder Gang'e hoş geldiniz!
+Eğitim ve Analiz videoları periyodik olarak #emrefx-videoları kanalında yayınlanmaktadır.
+
+Öncelikle bu kanaldaki videoları en baştan, sindirerek izlemenizi öneriyoruz. Böylece bir çok sorunuza cevap bulabilirsiniz.
+
 """
 
 admins = {
@@ -156,7 +165,7 @@ async def func():
         try:
             await user.send(TEXT) 
             print("Sent: ", user)
-            time.sleep(0.33)
+            time.sleep(0.5)
         except:
             print(f"Can't send msg to: {user}")
             cant_send.append(user.name)
@@ -184,16 +193,19 @@ async def calendar():
     print("Calendar Done!")
     
 ################################################################## COMMANDS ####################################################################
-@bot.command(name = "today")
-async def test(ctx):
-    data = get_calendar_data("today")
-    data = tabulate(data, numalign = "left", disable_numparse = True, headers = "keys", tablefmt="psql", stralign='center', showindex = False)
-    out_text = """
-    Update:
-    ```{}```
-    """.format(data)
-    await ctx.send(out_text)
+## TODO : Temporarily deactivated
 
+# @bot.command(name = "today")
+# async def test(ctx):
+#     data = get_calendar_data("today")
+#     data = tabulate(data, numalign = "left", disable_numparse = True, headers = "keys", tablefmt="psql", stralign='center', showindex = False)
+#     out_text = """
+#     Update:
+#     ```{}```
+#     """.format(data)
+#     await ctx.send(out_text)
+
+## Prints out fed rate
 @bot.command(name = "fedrate")
 async def fedRate(ctx):
     URL = "https://markets.newyorkfed.org/read?productCode=50&eventCodes=500&limit=25&startPosition=0&sort=postDt:-1&format=xlsx"
@@ -207,6 +219,7 @@ async def fedRate(ctx):
     classic_text = f"```{x} tarihi itibariyle FED Faiz oranı: {y}%\n```"
     await ctx.send(classic_text)
 
+## Downgrades users
 @bot.event
 async def downgrade_users():
     """
@@ -243,6 +256,13 @@ async def downgrade_users():
     await msg_downgrade_to_admin("emrefx", users)
     
     print("Downgrading done!\n")
+
+## Welcomes new users
+@bot.event
+async def on_member_join(member):
+    print(f"{member} joined!")
+    await member.send(WELCOME_TEXT)
+    print(f"Welcome msg sent to: {member}!")
 
 ################################################################## CRON JOBS ####################################################################
 @bot.event
