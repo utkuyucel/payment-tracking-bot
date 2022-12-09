@@ -53,11 +53,12 @@ admins = {
     }
 
 GUILD_ID = 973207220953182280
-    
+
+BASE_URL = "https://docs.google.com/spreadsheets/d/1thPwqNBytlqDEtFsylyyGi7upxN3eK2HeNtrh5OlbDc/edit#gid=0"
+
 def get_users_from_google():
     print("Getting data from google..")
-    URL = ""
-    URL = URL.replace("/edit#gid=", "/export?format=csv&gid=")
+    URL = BASE_URL.replace("/edit#gid=", "/export?format=csv&gid=")
     example_df = pd.read_csv(URL, dtype = {"ID": str})
     filtered_df = example_df[["ID","Discord Name", "isExpired"]]
     expired_users = filtered_df["ID"][filtered_df.isExpired == "Yes"]
@@ -83,8 +84,7 @@ def get_calendar_data(param: str) -> pd.DataFrame:
 
 
 def users_to_be_downgraded():
-    URL = ""
-    URL = URL.replace("/edit#gid=", "/export?format=csv&gid=")
+    URL = BASE_URL.replace("/edit#gid=", "/export?format=csv&gid=")
     example_df = pd.read_csv(URL, dtype = {"ID": str})
     filtered_df = example_df[["ID","Discord Name", "Days Remaining", "isExpired"]]
     output_names = filtered_df[filtered_df["Days Remaining"] <= -7]["ID"]
@@ -99,8 +99,7 @@ async def get_user_count_by_date():
     """
     A function that exports user count and today to a .csv file (appends data every running)
     """
-    URL = ""
-    URL = URL.replace("/edit#gid=", "/export?format=csv&gid=")
+    URL = BASE_URL.replace("/edit#gid=", "/export?format=csv&gid=")
     df = pd.read_csv(URL, dtype = {"ID": str})
     now = datetime.now().strftime("%d-%m-%Y")
     user_count = df["Twitter Name"].count()
