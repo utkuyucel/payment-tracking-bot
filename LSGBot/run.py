@@ -54,7 +54,7 @@ admins = {
 
 GUILD_ID = 973207220953182280
 
-BASE_URL = "https://docs.google.com/spreadsheets/d/1thPwqNBytlqDEtFsylyyGi7upxN3eK2HeNtrh5OlbDc/edit#gid=0"
+BASE_URL = ""
 
 def get_users_from_google():
     print("Getting data from google..")
