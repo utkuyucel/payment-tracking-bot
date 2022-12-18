@@ -54,7 +54,7 @@ admins = {
 
 GUILD_ID = 973207220953182280
 
-BASE_URL = ""
+BASE_URL = "https://docs.google.com/spreadsheets/d/1thPwqNBytlqDEtFsylyyGi7upxN3eK2HeNtrh5OlbDc/edit#gid=0"
 
 def get_users_from_google():
     print("Getting data from google..")
@@ -68,6 +68,28 @@ def get_users_from_google():
     expired_names_list = [i for i in expired_names]
     
     return expired_list, expired_names_list
+
+def get_all_users():
+    print("Getting all users.")
+    URL = BASE_URL.replace("/edit#gid=", "/export?format=csv&gid=")
+    example_df = pd.read_csv(URL, dtype = {"ID": str})
+    users = example_df["Discord Name"]
+
+    df_list = [i.strip() for i in users]
+    
+    return df_list
+
+##  FIXME: non_members_func
+def get_non_members_from_google() -> list[str]:
+    print("Getting non-members..")
+    URL = BASE_URL.replace("/edit#gid=", "/export?format=csv&gid=")
+    example_df = pd.read_csv(URL, dtype = {"ID": str})
+    filtered_df = example_df[["ID","Discord Name", "isExpired", "Days Remaining"]]
+    
+    remaining_df = filtered_df["Discord Name"].loc[filtered_df["Days Remaining"] < -7]
+    
+    return remaining_df 
+
 
 def get_calendar_data(param: str) -> pd.DataFrame:
     URL = "https://api.fintables.com/macro/calendar/?type=json&params={%22currentTab%22:%22"+ param +"%22,%22timeZone%22:63}"
@@ -93,8 +115,6 @@ def users_to_be_downgraded():
     return output_list
 
 
-    
-
 async def get_user_count_by_date():
     """
     A function that exports user count and today to a .csv file (appends data every running)
@@ -111,14 +131,21 @@ async def get_user_count_by_date():
 
     print("Export done!\n")
 
-async def msg_admin(inp_name: str, cant_send: list):
+## FIXME: you need to change "name" to (name - non-member)
+## OK
+## This function allows us to filter the msg which we sent to admins.
+async def msg_admin(inp_name: str, cant_send: list) -> None:
     _, name = get_users_from_google()
-    num_name = len(name)
+    non_member_names = get_non_members_from_google()
+    
+    clean_names = [nm for nm in name if nm not in non_member_names]
+    
+    num_name = len(non_member_names)
     admin = admins[inp_name]
     user = await bot.fetch_user(admin)
     
     everyone_ok_text = "Günaydın.\nBugün ödemesi gelen hiç kimse yok!\nBol kazançlı günler!"
-    other_text = f"Günaydın.\nBugün ödemesi gelen {num_name} kişi var:\n{name}\nKendilerine bilgilendirme mesajı gönderildi."
+    other_text = f"Günaydın.\nBugün ödemesi gelen {num_name} kişi var:\n{non_member_names}\nKendilerine bilgilendirme mesajı gönderildi."
     cant_send_text = f"{len(cant_send)} kişiye ulaşılamadı. Lütfen manuel mesaj atın:\n{cant_send}"
     
     print("Sendin msg to admins...")
@@ -150,11 +177,17 @@ async def msg_downgrade_to_admin(inp_name: str, downgraded: list):
         print("Exception")
         pass
 ################################################################## FUNCTIONS ##################################################################
-    
+
+## FIXME : need clean users
+## OKAY
 @bot.event
 async def func():
     print("Bot is running...")
     list_users, _ = get_users_from_google()
+    non_member = get_non_members_from_google()
+    
+    list_users = [user for user in list_users if user not in non_member]
+    
     cant_send = []
     
     # Kullanıcılara mesaj atma
@@ -203,6 +236,42 @@ async def calendar():
 #     ```{}```
 #     """.format(data)
 #     await ctx.send(out_text)
+
+
+## Test block ## TODO: This will be deactivated
+@bot.command(name = "test")
+@commands.has_any_role("TEST")
+async def test_me(ctx):
+    x =  get_non_members_from_google()
+
+    print(x)
+    print("\nDone!\n")
+
+
+## Prints the free members in the server
+@bot.command(name = "free")
+@commands.has_any_role("TEST", "admin")
+async def check_free(ctx):
+    channel_id = 1019579530412834847
+    guild = bot.get_guild(GUILD_ID)
+    channel = bot.get_channel(channel_id)
+
+    members = [member.name for member in guild.members]  # Serverdaki herkes
+    google_members = [i[1:-5] for i in get_all_users()]  # Excel'deki memberlar
+
+    # Get the free members by creating a set of members and then subtracting
+    # the set of google_members from it
+    free = set(members) - set(google_members)
+
+    # Create a string with the names of the free members
+    free_str = "\n".join(free)
+
+    free_str = "```" + free_str + "```"
+    
+    # Send the message with the list of free members
+    message = f"Server'da ücretsiz olarak kalan {len(free)} kişi var.\nÜyelerin listesi:\n{free_str}"
+    await channel.send(message)
+    
 
 ## Prints out fed rate
 @bot.command(name = "fedrate")
