@@ -54,7 +54,7 @@ admins = {
 
 GUILD_ID = 973207220953182280
 
-BASE_URL = ""
+BASE_URL = "https://docs.google.com/spreadsheets/d/1thPwqNBytlqDEtFsylyyGi7upxN3eK2HeNtrh5OlbDc/edit#gid=0"
 
 def get_users_from_google():
     print("Getting data from google..")
@@ -79,17 +79,19 @@ def get_all_users():
     
     return df_list
 
-##  FIXME: non_members_func
-def get_non_members_from_google():
+def get_non_members_from_google() -> list[str]:
     print("Getting non-members..")
     URL = BASE_URL.replace("/edit#gid=", "/export?format=csv&gid=")
     example_df = pd.read_csv(URL, dtype = {"ID": str})
     filtered_df = example_df[["ID","Discord Name", "isExpired", "Days Remaining"]]
     
     remaining_df = filtered_df["Discord Name"].loc[filtered_df["Days Remaining"] < -7]
-    remaining_df = [i for i in remaining_df]
+    remaining_id = filtered_df["ID"].loc[filtered_df["Days Remaining"] < -7]
     
-    return remaining_df 
+    remaining_list = [i for i in remaining_df]
+    remaining_list_id = [i for i in remaining_id]
+    
+    return remaining_list,  remaining_list_id
 
 
 def get_calendar_data(param: str) -> pd.DataFrame:
@@ -132,21 +134,22 @@ async def get_user_count_by_date():
 
     print("Export done!\n")
 
-## FIXME: you need to change "name" to (name - non-member)
-## OK
 ## This function allows us to filter the msg which we sent to admins.
 async def msg_admin(inp_name: str, cant_send: list) -> None:
     _, name = get_users_from_google()
-    non_member_names = get_non_members_from_google()
+    non_member_names, _ = get_non_members_from_google()
     
     clean_names = [nm for nm in name if nm not in non_member_names]
     
-    num_name = len(non_member_names)
+    print(name)
+    print(non_member_names)
+    
+    num_name = len(clean_names)
     admin = admins[inp_name]
     user = await bot.fetch_user(admin)
     
     everyone_ok_text = "Günaydın.\nBugün ödemesi gelen hiç kimse yok!\nBol kazançlı günler!"
-    other_text = f"Günaydın.\nBugün ödemesi gelen {num_name} kişi var:\n{non_member_names}\nKendilerine bilgilendirme mesajı gönderildi."
+    other_text = f"Günaydın.\nBugün ödemesi gelen {num_name} kişi var:\n{clean_names}\nKendilerine bilgilendirme mesajı gönderildi."
     cant_send_text = f"{len(cant_send)} kişiye ulaşılamadı. Lütfen manuel mesaj atın:\n{cant_send}"
     
     print("Sendin msg to admins...")
@@ -179,20 +182,19 @@ async def msg_downgrade_to_admin(inp_name: str, downgraded: list):
         pass
 ################################################################## FUNCTIONS ##################################################################
 
-## FIXME : need clean users
-## OKAY
 @bot.event
 async def func():
     print("Bot is running...")
     list_users, _ = get_users_from_google()
-    non_member = get_non_members_from_google()
+    non_member, non_member_id = get_non_members_from_google()
     
-    list_users = [user for user in list_users if user not in non_member]
+    out_users = [user for user in list_users if user not in non_member_id]
     
     cant_send = []
     
     # Kullanıcılara mesaj atma
-    for i in list_users:
+    
+    for i in out_users:
         user = await bot.fetch_user(i)
         
         try:
@@ -204,6 +206,7 @@ async def func():
             cant_send.append(user.name)
             pass
     
+    print("Func - Done!")
     time.sleep(1)
     await msg_admin("utku", cant_send)
     await msg_admin("emrefx", cant_send) 
@@ -226,28 +229,6 @@ async def calendar():
     print("Calendar Done!")
     
 ################################################################## COMMANDS ####################################################################
-## TODO : Temporarily deactivated
-
-# @bot.command(name = "today")
-# async def test(ctx):
-#     data = get_calendar_data("today")
-#     data = tabulate(data, numalign = "left", disable_numparse = True, headers = "keys", tablefmt="psql", stralign='center', showindex = False)
-#     out_text = """
-#     Update:
-#     ```{}```
-#     """.format(data)
-#     await ctx.send(out_text)
-
-
-## Test block ## TODO: This will be deactivated
-@bot.command(name = "test")
-@commands.has_any_role("TEST")
-async def test_me(ctx):
-    x =  get_non_members_from_google()
-
-    print(x)
-    print("\nDone!\n")
-
 
 ## Prints the free members in the server
 @bot.command(name = "free")
@@ -340,7 +321,6 @@ async def on_ready():
     
      #initializing scheduler
     
-    
     scheduler = AsyncIOScheduler()
     
     scheduler.add_job(get_user_count_by_date, CronTrigger(year="*", month="*", day="*", hour="3", minute="0"))
@@ -349,9 +329,8 @@ async def on_ready():
     scheduler.add_job(func, CronTrigger(year="*", month="*", day="*", hour="8", minute="0"))
     scheduler.add_job(downgrade_users, CronTrigger(year="*", month="*", day="*", hour="8", minute="15"), max_instances=50)
     
-    
-    # scheduler.add_job(downgrade_users, CronTrigger(second="10, 20, 30, 40,50"), max_instances=50)
-    #starting the scheduler
+    # starting the scheduler
+
     scheduler.start()
     
 
