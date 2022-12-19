@@ -79,7 +79,7 @@ def get_all_users():
     
     return df_list
 
-def get_non_members_from_google() -> list[str]:
+def get_non_members_from_google():
     print("Getting non-members..")
     URL = BASE_URL.replace("/edit#gid=", "/export?format=csv&gid=")
     example_df = pd.read_csv(URL, dtype = {"ID": str})
