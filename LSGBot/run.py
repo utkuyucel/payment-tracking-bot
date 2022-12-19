@@ -87,6 +87,7 @@ def get_non_members_from_google():
     filtered_df = example_df[["ID","Discord Name", "isExpired", "Days Remaining"]]
     
     remaining_df = filtered_df["Discord Name"].loc[filtered_df["Days Remaining"] < -7]
+    remaining_df = [i for i in remaining_df]
     
     return remaining_df 
 
