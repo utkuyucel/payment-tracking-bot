@@ -1,6 +1,6 @@
-# google-cloud-instance
+# Discord payment tracking bot.
 
-A discord bot written in Python.
+Using this bot in private(paid) discord groups.
 
 Features:
 
