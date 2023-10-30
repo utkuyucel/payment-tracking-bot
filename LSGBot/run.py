@@ -25,7 +25,7 @@ bot = commands.Bot(command_prefix='!',intents=intents)
 TEXT = """
 Selamlar.
 Üyeliğinizin süresi maalesef doldu.
-Üyeliğinize devam etmek veya üyelik durumunuzu güncellemek için lütfen @emrefx ile iletişime geçin.
+Üyeliğinize devam etmek veya üyelik durumunuzu güncellemek için lütfen @utku ile iletişime geçin.
 
 (Uyarı: Bu otomatik bir mesajdır, cevap vermenize gerek yoktur.)
 """
@@ -34,13 +34,13 @@ DOWNGRADE_TEXT = """
 Selamlar.
 Grup üyeliğinizi yeniletmeniz için gerekli olan 1 haftalık süre bugün itibariyle maalesef dolmuştur.
 Bu yüzden, @member üyelik yetkiniz alınmıştır. 
-Üyeliğinize devam etmek veya üyelik durumunuzu güncellemek için lütfen @emrefx ile iletişime geçin.
+Üyeliğinize devam etmek veya üyelik durumunuzu güncellemek için lütfen @utku ile iletişime geçin.
 
 (Uyarı: Bu otomatik bir mesajdır, cevap vermenize gerek yoktur.)
 """
 
 WELCOME_TEXT = """
-Left Shoulder Gang'e hoş geldiniz!
+X'e hoş geldiniz!
 Eğitim ve Analiz videoları periyodik olarak #emrefx-videoları kanalında yayınlanmaktadır.
 
 Öncelikle bu kanaldaki videoları en baştan, sindirerek izlemenizi öneriyoruz. Böylece bir çok sorunuza cevap bulabilirsiniz.
@@ -49,12 +49,12 @@ Eğitim ve Analiz videoları periyodik olarak #emrefx-videoları kanalında yay�
 
 admins = {
     "utku": 326790762517889034,
-    "emrefx": 514075929862209567,
+    "xxxxx": 12345,
     }
 
-GUILD_ID = 973207220953182280
+GUILD_ID = 1234
 
-BASE_URL = "https://docs.google.com/spreadsheets/d/1thPwqNBytlqDEtFsylyyGi7upxN3eK2HeNtrh5OlbDc/edit#gid=0"
+BASE_URL = "TABLE_URL"
 
 def get_users_from_google():
     print("Getting data from google..")
